@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import notificationService from '../services/notificationService';
@@ -11,33 +11,9 @@ const NotificationBell = ({ maxDisplayNotifications = 5 }) => {
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
-    // Fetch notifications on component mount
-    useEffect(() => {
-        fetchNotifications();
-
-        // Set up an interval to check for new notifications
-        const intervalId = setInterval(() => {
-            fetchUnreadCount();
-        }, 60000); // Check every minute
-
-        // Clean up interval on unmount
-        return () => clearInterval(intervalId);
-    }, []);
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     // Fetch notifications from the API
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         setLoading(true);
         try {
             // For demo, we'll use mock data
@@ -58,7 +34,34 @@ const NotificationBell = ({ maxDisplayNotifications = 5 }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [maxDisplayNotifications]);
+
+    // Fetch notifications on component mount
+    useEffect(() => {
+        fetchNotifications();
+
+        // Set up an interval to check for new notifications
+        const intervalId = setInterval(() => {
+            fetchUnreadCount();
+        }, 60000); // Check every minute
+
+        // Clean up interval on unmount
+        return () => clearInterval(intervalId);
+    }, [fetchNotifications]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // ...existing code...
 
     // Fetch only the unread count
     const fetchUnreadCount = async () => {
